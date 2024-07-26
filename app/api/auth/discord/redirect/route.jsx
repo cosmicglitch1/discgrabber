@@ -51,7 +51,7 @@ export async function GET(request) {
 
   if (!accessToken && code) {
     const formData = new url.URLSearchParams({
-      client_id: process.env.ClientID,
+      client_id: process.env.NEXT_PUBLIC_CLIENTID,
       client_secret: process.env.ClientSecret,
       grant_type: 'authorization_code',
       code: code,
