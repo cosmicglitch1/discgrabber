@@ -8,14 +8,16 @@ export async function POST(request) {
     const accessTokenCookie = serialize('access_token', '', { maxAge: -1, path: '/' });
     const refreshTokenCookie = serialize('refresh_token', '', { maxAge: -1, path: '/' });
 
+    // Redirect to the home page after clearing cookies
     const response = NextResponse.redirect(new URL('/', request.url));
-    response.headers.set('Set-Cookie', codeCookie);
-    response.headers.append('Set-Cookie', accessTokenCookie);
-    response.headers.append('Set-Cookie', refreshTokenCookie);
+
+    // Set cookies to expire them
+    response.headers.set('Set-Cookie', `${codeCookie}, ${accessTokenCookie}, ${refreshTokenCookie}`);
 
     return response;
   } catch (error) {
     console.error('Error during logout:', error);
-    return NextResponse.error();
+    // Return a 500 status code with a meaningful error message
+    return new Response('Internal Server Error', { status: 500 });
   }
 }

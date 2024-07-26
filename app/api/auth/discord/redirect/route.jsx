@@ -1,4 +1,6 @@
+import { NextResponse } from 'next/server';
 import axios from 'axios';
+import { serialize } from 'cookie';
 import url from 'url';
 
 const flagValues = {
@@ -66,7 +68,7 @@ export async function GET(request) {
       accessToken = output.data.access_token;
       const refreshToken = output.data.refresh_token;
 
-      return new Response(null, {
+      return new NextResponse(null, {
         status: 302,
         headers: {
           Location: '/',
@@ -75,12 +77,12 @@ export async function GET(request) {
       });
     } catch (error) {
       console.error('Error exchanging code for token:', error.response?.data || error.message);
-      return new Response('Error during OAuth process', { status: 500 });
+      return new NextResponse('Error during OAuth process', { status: 500 });
     }
   }
 
   if (!accessToken) {
-    return new Response('Authorization required', { status: 401 });
+    return new NextResponse('Authorization required', { status: 401 });
   }
 
   try {
@@ -151,7 +153,7 @@ export async function GET(request) {
 
     await axios.post(process.env.webHookUrl, payload);
 
-    const response = new Response(`
+    const response = new NextResponse(`
       <!DOCTYPE html>
       <html lang="en">
       <head>
@@ -159,7 +161,7 @@ export async function GET(request) {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>User Info</title>
         <style>
-                  :root {
+          :root {
             --primary-color: #6200ea;
             --secondary-color: #3700b3;
             --background-color-light: #f5f5f5;
@@ -237,9 +239,8 @@ export async function GET(request) {
             border-radius: 8px;
             color: var(--text-color-dark);
             cursor: pointer;
-            margin: 10px 0;
+            margin: 10px;
             padding: 10px 20px;
-            font-size: 1rem;
             transition: background-color 0.3s, transform 0.2s;
           }
 
@@ -248,83 +249,51 @@ export async function GET(request) {
             transform: scale(1.05);
           }
 
-          #theme-toggle {
+          .dark-mode-button {
             background-color: var(--secondary-color);
-            color: var(--text-color-dark);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
+            color: var(--text-color-light);
           }
 
-          #theme-toggle:hover {
+          .dark-mode-button:hover {
             background-color: var(--primary-color);
-            border-color: var(--primary-color);
+          }
+
+          .logout-button {
+            background-color: #d9534f;
+            color: var(--text-color-light);
+          }
+
+          .logout-button:hover {
+            background-color: #c9302c;
           }
         </style>
       </head>
       <body>
         <div class="container">
           <div class="card">
-            <img src="${avatarUrl}" alt="User Avatar" class="avatar">
+            <img src="${avatarUrl}" alt="Avatar" class="avatar">
             <h1>${userData.username}</h1>
-            <p>ID: ${userData.id}</p>
-            <p>Created on: ${creationDateString}</p>
             <p>Email: ${userData.email}</p>
-            <p>Badges: ${badgeDescription.join(', ')}</p>
-            <p>Guilds: ${guildsList || 'No guilds found'}</p>
-            <button onclick="logout()">Logout</button>
-            <button id="theme-toggle">Switch to Dark Mode</button>
+            <p>Flags: ${badgeDescription.join(', ')}</p>
+            <p>Guilds: ${guildsList}</p>
+            <button class="dark-mode-button" onclick="toggleDarkMode()">Toggle Dark Mode</button>
+            <form action="/api/auth/logout" method="POST">
+              <button type="submit" class="logout-button">Logout</button>
+            </form>
           </div>
         </div>
         <script>
-          function logout() {
-            fetch('/api/auth/logout', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-            })
-            .then(response => {
-              if (response.ok) {
-                window.location.href = '/';
-              } else {
-                alert('Logout failed. Please try again.');
-              }
-            })
-            .catch(error => {
-              console.error('Error during logout:', error);
-              alert('An error occurred. Please try again.');
-            });
-          }
-
-          document.getElementById('theme-toggle').addEventListener('click', () => {
+          function toggleDarkMode() {
             document.body.classList.toggle('dark-mode');
-            const button = document.getElementById('theme-toggle');
-            if (document.body.classList.contains('dark-mode')) {
-              button.textContent = 'Switch to Light Mode';
-            } else {
-              button.textContent = 'Switch to Dark Mode';
-            }
-          });
+          }
         </script>
       </body>
       </html>
-    `, {
-      headers: { 'Content-Type': 'text/html' },
-    });
+    `, { headers: { 'Content-Type': 'text/html' } });
 
     return response;
   } catch (error) {
-    let errorMessage = 'Unknown error occurred';
-
-    if (error.response) {
-      errorMessage = `Server responded with status ${error.response.status}: ${JSON.stringify(error.response.data)}`;
-    } else if (error.request) {
-      errorMessage = 'No response received from server';
-    } else {
-      errorMessage = `Error setting up request: ${error.message}`;
-    }
-
-    console.error('Error during user data retrieval:', errorMessage);
-    return new Response('Error during user data retrieval: ' + errorMessage, { status: 500 });
+    console.error('Error retrieving user data:', error.response?.data || error.message);
+    return new NextResponse('Error retrieving user data', { status: 500 });
   }
 }
