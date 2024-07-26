@@ -8,7 +8,7 @@ export async function POST(request) {
     const accessTokenCookie = serialize('access_token', '', { maxAge: -1, path: '/' });
     const refreshTokenCookie = serialize('refresh_token', '', { maxAge: -1, path: '/' });
 
-    // Redirect to the home page after clearing cookies
+    // Create a new response object
     const response = NextResponse.redirect(new URL('/', request.url));
 
     // Set cookies to expire them
@@ -18,6 +18,6 @@ export async function POST(request) {
   } catch (error) {
     console.error('Error during logout:', error);
     // Return a 500 status code with a meaningful error message
-    return new Response('Internal Server Error', { status: 500 });
+    return new NextResponse('Internal Server Error', { status: 500 });
   }
 }
