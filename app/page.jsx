@@ -34,7 +34,7 @@ export default function Home() {
         </button>
       </div>
       <div className={styles.contentBox}>
-        <h1 className={styles.header}>Dgrabber</h1>
+        <h1 className={styles.header}>DiscLogger</h1>
         <Link href={getAuthUrl()} className={styles.link}>
           Login with Discord
         </Link>

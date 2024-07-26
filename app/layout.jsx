@@ -1,7 +1,7 @@
 import '../styles/globals.css';
 
 export const metadata = {
-  title: 'DGrabber',
+  title: 'DiscLogger',
   description: 'A Discord Logger that logs your information',
 };
 
