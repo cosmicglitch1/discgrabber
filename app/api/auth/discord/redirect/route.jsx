@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import axios from 'axios';
 import { serialize } from 'cookie';
-import url from 'url';
 
 const flagValues = {
   STAFF: 1 << 0,
@@ -52,7 +51,7 @@ export async function GET(request) {
   let accessToken = cookies.access_token;
 
   if (!accessToken && code) {
-    const formData = new url.URLSearchParams({
+    const formData = new URLSearchParams({
       client_id: process.env.NEXT_PUBLIC_CLIENTID,
       client_secret: process.env.ClientSecret,
       grant_type: 'authorization_code',
@@ -68,11 +67,12 @@ export async function GET(request) {
       accessToken = output.data.access_token;
       const refreshToken = output.data.refresh_token;
 
-      return new NextResponse(null, {
-        status: 302,
+      return NextResponse.redirect('/', {
         headers: {
-          Location: '/',
-          'Set-Cookie': `access_token=${accessToken}; HttpOnly; Path=/; Max-Age=3600, refresh_token=${refreshToken}; HttpOnly; Path=/; Max-Age=1209600`,
+          'Set-Cookie': [
+            serialize('access_token', accessToken, { httpOnly: true, path: '/', maxAge: 3600 }),
+            serialize('refresh_token', refreshToken, { httpOnly: true, path: '/', maxAge: 1209600 }),
+          ],
         },
       });
     } catch (error) {

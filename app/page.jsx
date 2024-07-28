@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Head from 'next/head';
 import styles from '../styles/page.module.css';
 
 const getAuthUrl = () => {
@@ -27,21 +28,27 @@ export default function Home() {
   };
 
   return (
-    <div className={styles.container}>
-      <div className={styles.toggleContainer}>
-        <button onClick={toggleTheme} className={styles.toggleButton}>
-          {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
-        </button>
+    <>
+      <Head>
+        <link rel="icon" href="/favicon.ico" />
+        <title>DiscLogger</title>
+      </Head>
+      <div className={styles.container}>
+        <div className={styles.toggleContainer}>
+          <button onClick={toggleTheme} className={styles.toggleButton}>
+            {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+          </button>
+        </div>
+        <div className={styles.contentBox}>
+          <h1 className={styles.header}>DiscLogger</h1>
+          <Link href={getAuthUrl()} className={styles.link}>
+            Login with Discord
+          </Link>
+          <footer className={styles.footer}>
+            <p>OAuth2 integration powered by Discord</p>
+          </footer>
+        </div>
       </div>
-      <div className={styles.contentBox}>
-        <h1 className={styles.header}>DiscLogger</h1>
-        <Link href={getAuthUrl()} className={styles.link}>
-          Login with Discord
-        </Link>
-        <footer className={styles.footer}>
-          <p>OAuth2 integration powered by Discord</p>
-        </footer>
-      </div>
-    </div>
+    </>
   );
 }

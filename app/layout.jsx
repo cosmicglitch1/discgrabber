@@ -6,12 +6,12 @@ export const metadata = {
   keywords: 'Discord, Logger, Discord Bot, Server Management, Logging, Discord OAuth2',
   author: 'DiscLogger',
   viewport: 'width=device-width, initial-scale=1',
-  themeColor: '#6200ea',
   og: {
     title: 'DiscLogger',
     type: 'website',
     url: 'https://disclogger.vercel.app',
     image: '/preview.png',
+    description: 'A comprehensive tool for logging your information' // Added this to match your metadata
   },
 };
 
@@ -24,7 +24,7 @@ export default function RootLayout({ children }) {
         <meta name="description" content={metadata.description} />
         <meta name="keywords" content={metadata.keywords} />
         <meta name="author" content={metadata.author} />
-        <meta name="theme-color" content={metadata.themeColor} />
+        <meta name="theme-color" content="#6200ea" /> {/* Moved theme-color here */}
         <title>{metadata.title}</title>
         
         {/* Open Graph Meta Tags */}
