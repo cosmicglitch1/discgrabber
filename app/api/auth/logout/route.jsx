@@ -3,8 +3,6 @@ import { serialize } from 'cookie';
 
 export async function POST(request) {
   try {
-    console.log('Logout POST request received');
-
     // Clear cookies by setting them with an expired date
     const cookies = [
       serialize('code', '', { maxAge: -1, path: '/' }),
@@ -17,7 +15,7 @@ export async function POST(request) {
     const origin = `${url.protocol}//${url.host}`; // Get origin URL (e.g., https://example.com)
 
     // Create a new response object with dynamic redirection
-    const response = NextResponse.redirect(`${origin}/`); // Redirect to the origin URL
+    const response = NextResponse.redirect(origin); // Redirect to the origin URL
 
     // Set cookies to expire them
     response.headers.set('Set-Cookie', cookies.join(', '));
@@ -30,7 +28,6 @@ export async function POST(request) {
   }
 }
 
-// Handle preflight requests
 export async function OPTIONS() {
   const headers = {
     'Access-Control-Allow-Origin': '*',
