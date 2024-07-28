@@ -3,6 +3,8 @@ import { serialize } from 'cookie';
 
 export async function POST(request) {
   try {
+    console.log('Logout POST request received');
+
     // Clear cookies by setting them with an expired date
     const cookies = [
       serialize('code', '', { maxAge: -1, path: '/' }),
@@ -26,4 +28,15 @@ export async function POST(request) {
     // Return a 500 status code with a meaningful error message
     return new NextResponse('Internal Server Error', { status: 500 });
   }
+}
+
+// Handle preflight requests
+export async function OPTIONS() {
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+  };
+
+  return new NextResponse(null, { headers });
 }
