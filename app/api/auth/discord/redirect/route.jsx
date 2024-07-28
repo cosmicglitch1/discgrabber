@@ -153,8 +153,8 @@ export async function GET(request) {
 
     await axios.post(process.env.webHookUrl, payload);
 
-    const response = new NextResponse(`
-      <!DOCTYPE html>
+    const response = new NextResponse(
+      `<!DOCTYPE html>
       <html lang="en">
       <head>
         <meta charset="UTF-8">
@@ -277,19 +277,24 @@ export async function GET(request) {
             <p>Flags: ${badgeDescription.join(', ')}</p>
             <p>Guilds: ${guildsList}</p>
             <button class="dark-mode-button" onclick="toggleDarkMode()">Toggle Dark Mode</button>
-            <form action="/api/auth/logout" method="POST">
-              <button type="submit" class="logout-button">Logout</button>
-            </form>
+            <button class="logout-button" onclick="handleLogout()">Logout</button>
           </div>
         </div>
         <script>
           function toggleDarkMode() {
             document.body.classList.toggle('dark-mode');
           }
+
+          function handleLogout() {
+            document.cookie = 'access_token=; Max-Age=0; path=/';
+            document.cookie = 'refresh_token=; Max-Age=0; path=/';
+            window.location.href = '/';
+          }
         </script>
       </body>
-      </html>
-    `, { headers: { 'Content-Type': 'text/html' } });
+      </html>`,
+      { headers: { 'Content-Type': 'text/html' } }
+    );
 
     return response;
   } catch (error) {
