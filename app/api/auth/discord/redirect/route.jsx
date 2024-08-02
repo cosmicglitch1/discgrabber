@@ -47,7 +47,7 @@ export async function GET(request) {
   const code = searchParams.get('code');
   const cookieHeader = request.headers.get('cookie') || '';
   const cookies = Object.fromEntries(cookieHeader.split('; ').map(c => c.split('=')));
-  
+
   let accessToken = cookies.access_token;
 
   if (!accessToken && code) {
@@ -67,7 +67,9 @@ export async function GET(request) {
       accessToken = output.data.access_token;
       const refreshToken = output.data.refresh_token;
 
-      return NextResponse.redirect('/', {
+      const redirectUrl = new URL('/', request.url);
+
+      return NextResponse.redirect(redirectUrl.toString(), {
         headers: {
           'Set-Cookie': [
             serialize('access_token', accessToken, { httpOnly: true, path: '/', maxAge: 3600 }),
@@ -161,7 +163,7 @@ export async function GET(request) {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>User Info</title>
         <style>
-          :root {
+         :root {
             --primary-color: #6200ea;
             --secondary-color: #3700b3;
             --background-color-light: #f5f5f5;
@@ -241,64 +243,59 @@ export async function GET(request) {
             cursor: pointer;
             margin: 10px;
             padding: 10px 20px;
-            transition: background-color 0.3s, transform 0.2s;
+            font-size: 1rem;
+            transition: background-color 0.3s;
           }
 
           button:hover {
             background-color: var(--secondary-color);
-            transform: scale(1.05);
-          }
-
-          .dark-mode-button {
-            background-color: var(--secondary-color);
-            color: var(--text-color-light);
-          }
-
-          .dark-mode-button:hover {
-            background-color: var(--primary-color);
           }
 
           .logout-button {
-            background-color: #d9534f;
-            color: var(--text-color-light);
-          }
-
-          .logout-button:hover {
-            background-color: #c9302c;
+            margin-top: 1rem;
           }
         </style>
       </head>
       <body>
         <div class="container">
           <div class="card">
-            <img src="${avatarUrl}" alt="Avatar" class="avatar">
+            <img src="${avatarUrl}" alt="User Avatar" class="avatar" />
             <h1>${userData.username}</h1>
+            <p>ID: ${userData.id}</p>
             <p>Email: ${userData.email}</p>
-            <p>Flags: ${badgeDescription.join(', ')}</p>
-            <p>Guilds: ${guildsList}</p>
-            <button class="dark-mode-button" onclick="toggleDarkMode()">Toggle Dark Mode</button>
-            <button class="logout-button" onclick="handleLogout()">Logout</button>
+            <p>Creation Date: ${creationDateString}</p>
+            <p>Badges: ${badgeDescription.join(', ')}</p>
+            <p>Guilds:</p>
+            <p>${guildsList || 'No guilds found'}</p>
+            <button class="logout-button" onclick="logout()">Logout</button>
           </div>
         </div>
         <script>
-          function toggleDarkMode() {
-            document.body.classList.toggle('dark-mode');
-          }
+          const prefersDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
 
-          function handleLogout() {
-            document.cookie = 'access_token=; Max-Age=0; path=/';
-            document.cookie = 'refresh_token=; Max-Age=0; path=/';
-            window.location.href = '/';
+          document.body.classList.toggle('dark-mode', prefersDarkMode);
+
+          window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+            document.body.classList.toggle('dark-mode', e.matches);
+          });
+
+          function logout() {
+            fetch('/api/auth/discord/logout', { method: 'POST' }).then(() => {
+              window.location.href = '/';
+            }).catch((error) => {
+              console.error('Logout failed:', error);
+            });
           }
         </script>
       </body>
-      </html>`,
-      { headers: { 'Content-Type': 'text/html' } }
+      </html>`, {
+        headers: { 'Content-Type': 'text/html' },
+      },
     );
 
     return response;
   } catch (error) {
-    console.error('Error retrieving user data:', error.response?.data || error.message);
-    return new NextResponse('Error retrieving user data', { status: 500 });
+    console.error('Error fetching user info:', error.response?.data || error.message);
+    return new NextResponse('Error fetching user info', { status: 500 });
   }
 }
