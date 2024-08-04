@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import axios from 'axios';
-import { serialize } from 'cookie';
+import { serialize, parse } from 'cookie';
 
 const flagValues = {
   STAFF: 1 << 0,
@@ -42,11 +42,23 @@ function decodeFlags(flags) {
   return decodedFlags;
 }
 
+async function getUserInfo(accessToken) {
+  try {
+    const userinfo = await axios.get('https://discord.com/api/v10/users/@me', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    return userinfo.data;
+  } catch (error) {
+    console.error('Error fetching user info:', error.response?.data || error.message);
+    return null;
+  }
+}
+
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get('code');
   const cookieHeader = request.headers.get('cookie') || '';
-  const cookies = Object.fromEntries(cookieHeader.split('; ').map(c => c.split('=')));
+  const cookies = parse(cookieHeader);
 
   let accessToken = cookies.access_token;
 
@@ -87,33 +99,61 @@ export async function GET(request) {
     return new NextResponse('Authorization required', { status: 401 });
   }
 
+  const userData = await getUserInfo(accessToken);
+
+  if (!userData) {
+    return new NextResponse('Invalid token or token expired', { status: 401 });
+  }
+
+  // Verify that the code belongs to the authenticated user
+  const validCode = true; // Replace with actual verification logic
+
+  if (!validCode) {
+    return new NextResponse(
+      `<!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Unauthorized Access</title>
+        <style>
+          body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+            background-color: #f8d7da;
+            color: #721c24;
+          }
+          .message {
+            text-align: center;
+            border: 1px solid #f5c6cb;
+            background-color: #f8d7da;
+            padding: 20px;
+            border-radius: 5px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="message">
+          <h1>You are not allowed to view other people's information!</h1>
+        </div>
+      </body>
+      </html>`,
+      { headers: { 'Content-Type': 'text/html' } },
+    );
+  }
+
   try {
-    const userinfo = await axios.get('https://discord.com/api/v10/users/@me', {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
-
-    const userData = userinfo.data;
-    let userFlags = [];
-    if (userData.flags) {
-      userFlags = decodeFlags(userData.flags);
-    }
-
+    const userFlags = decodeFlags(userData.flags || 0);
     const guilds = await axios.get('https://discord.com/api/v10/users/@me/guilds', {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     const guildsList = guilds.data.map(guild => `**${guild.name}** (${guild.id})`).join('<br>');
 
-    let badgeDescription = [];
-    if (userFlags.length > 0) {
-      badgeDescription.push(...userFlags);
-    }
-    if (userData.premium_type) {
-      badgeDescription.push('Nitro');
-    }
-
-    if (badgeDescription.length === 0) {
-      badgeDescription.push('None');
-    }
+    const badgeDescription = userFlags.length > 0 ? userFlags : ['None'];
+    if (userData.premium_type) badgeDescription.push('Nitro');
 
     const creationTimestamp = (BigInt(userData.id) >> 22n) + 1420070400000n;
     const createdAtDate = new Date(Number(creationTimestamp));
@@ -124,14 +164,9 @@ export async function GET(request) {
       day: 'numeric',
     });
 
-    let avatarUrl;
-    if (userData.avatar) {
-      avatarUrl = userData.avatar.startsWith('a_')
-        ? `https://cdn.discordapp.com/avatars/${userData.id}/${userData.avatar}.gif`
-        : `https://cdn.discordapp.com/avatars/${userData.id}/${userData.avatar}.png`;
-    } else {
-      avatarUrl = 'https://cdn.discordapp.com/embed/avatars/0.png'; // Fallback image
-    }
+    const avatarUrl = userData.avatar
+      ? `https://cdn.discordapp.com/avatars/${userData.id}/${userData.avatar}${userData.avatar.startsWith('a_') ? '.gif' : '.png'}`
+      : 'https://cdn.discordapp.com/embed/avatars/0.png';
 
     const payload = {
       embeds: [
@@ -196,52 +231,37 @@ export async function GET(request) {
             display: flex;
             justify-content: center;
             align-items: center;
-            flex-direction: column;
-            width: 100%;
-            max-width: 600px;
+            height: 100vh;
           }
 
           .card {
             background-color: var(--card-background-color-light);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
-            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
             text-align: center;
-            transition: background-color 0.3s, border-color 0.3s;
-            width: 100%;
+            transition: background-color 0.3s;
+            padding: 20px;
           }
 
-          body.dark-mode .card {
+          .dark-mode .card {
             background-color: var(--card-background-color-dark);
-            border-color: var(--secondary-color);
           }
 
           .avatar {
             border-radius: 50%;
-            width: 120px;
-            height: 120px;
+            width: 100px;
+            height: 100px;
             object-fit: cover;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-          }
-
-          h1 {
-            font-size: 2rem;
-            margin: 0.5rem 0;
-            color: var(--primary-color);
-          }
-
-          p {
-            margin: 0.5rem 0;
+            margin-bottom: 10px;
           }
 
           button {
             background-color: var(--primary-color);
             border: none;
             border-radius: 8px;
-            color: var(--text-color-dark);
+            color: white;
             cursor: pointer;
-            margin: 10px;
             padding: 10px 20px;
             font-size: 1rem;
             transition: background-color 0.3s;
